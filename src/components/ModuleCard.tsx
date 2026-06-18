@@ -1,5 +1,4 @@
-import type { Module } from '../types';
-import { getModuleProgress, getSkillById } from '../data/skills';
+import type { Module, Skill } from '../types';
 
 interface ModuleCardProps {
   module: Module;
@@ -12,6 +11,17 @@ interface ModuleCardProps {
   onMarkAllSkillsRead: () => void;
   onMarkAllSkillsUnread: () => void;
   onSkillClick: (skillId: string) => void;
+  /** Passed from context so no static data import is needed */
+  getSkillById: (id: string) => Skill | undefined;
+}
+
+function getModuleProgress(
+  module: Module,
+  readSkills: Record<string, boolean>,
+): { read: number; total: number } {
+  const total = module.skillIds.length;
+  const read = module.skillIds.filter((id) => readSkills[id]).length;
+  return { read, total };
 }
 
 export function ModuleCard({
@@ -25,6 +35,7 @@ export function ModuleCard({
   onMarkAllSkillsRead,
   onMarkAllSkillsUnread,
   onSkillClick,
+  getSkillById,
 }: ModuleCardProps) {
   const { read, total } = getModuleProgress(module, readSkills);
   const pct = total > 0 ? Math.round((read / total) * 100) : 0;
@@ -36,13 +47,16 @@ export function ModuleCard({
     },
     { read: 0, total: 0 },
   );
-  const topicPct = topicTotals.total > 0 ? Math.round((topicTotals.read / topicTotals.total) * 100) : 0;
+  const topicPct =
+    topicTotals.total > 0 ? Math.round((topicTotals.read / topicTotals.total) * 100) : 0;
 
   return (
     <article className={`module-card ${isRead ? 'module-card--read' : ''}`}>
       <div className="module-card__header">
         <div>
-          <span className="module-card__week">{module.weekRange}</span>
+          {module.weekRange && (
+            <span className="module-card__week">{module.weekRange}</span>
+          )}
           <h3 className="module-card__title">{module.name}</h3>
           <p className="module-card__desc">{module.description}</p>
         </div>

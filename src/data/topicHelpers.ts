@@ -1,10 +1,7 @@
-import { skills } from './skills';
 import type { SkillTopics, SubTopic, TopicSection } from '../types';
-
 type SubtopicInput = string;
 type TopicInput = [name: string, subtopics: SubtopicInput[]];
 type SectionInput = [title: string, topics: TopicInput[]];
-
 function slug(text: string): string {
   return text
     .toLowerCase()
@@ -12,7 +9,6 @@ function slug(text: string): string {
     .replace(/^-|-$/g, '')
     .slice(0, 48);
 }
-
 export function buildSkillTopics(skillId: string, sections: SectionInput[]): SkillTopics {
   return {
     skillId,
@@ -30,11 +26,9 @@ export function buildSkillTopics(skillId: string, sections: SectionInput[]): Ski
     })),
   };
 }
-
 export function topicKey(skillId: string, subtopicId: string): string {
   return `${skillId}::${subtopicId}`;
 }
-
 export function getAllSubtopics(detail: SkillTopics): Array<{ key: string; subtopic: SubTopic; topicName: string; sectionTitle: string }> {
   const result: Array<{ key: string; subtopic: SubTopic; topicName: string; sectionTitle: string }> = [];
   for (const section of detail.sections) {
@@ -51,7 +45,6 @@ export function getAllSubtopics(detail: SkillTopics): Array<{ key: string; subto
   }
   return result;
 }
-
 export function getSkillTopicProgress(
   detail: SkillTopics,
   readTopics: Record<string, boolean>,
@@ -61,11 +54,9 @@ export function getSkillTopicProgress(
   const total = all.length;
   return { read, total, pct: total > 0 ? Math.round((read / total) * 100) : 0 };
 }
-
 export function getSubtopicIdsForSkill(detail: SkillTopics): string[] {
   return getAllSubtopics(detail).map((item) => item.key);
 }
-
 export function getSubtopicIdsForSection(detail: SkillTopics, sectionId: string): string[] {
   const section = detail.sections.find((s) => s.id === sectionId);
   if (!section) return [];
@@ -77,14 +68,12 @@ export function getSubtopicIdsForSection(detail: SkillTopics, sectionId: string)
   }
   return keys;
 }
-
 export function getSubtopicIdsForTopic(detail: SkillTopics, sectionId: string, topicId: string): string[] {
   const section = detail.sections.find((s) => s.id === sectionId);
   const topic = section?.topics.find((t) => t.id === topicId);
   if (!topic) return [];
   return topic.subtopics.map((sub) => topicKey(detail.skillId, sub.id));
 }
-
 /** Default topics when skill has no explicit curriculum */
 export function defaultSkillTopics(skillId: string, skillName: string): SkillTopics {
   return buildSkillTopics(skillId, [
@@ -110,12 +99,4 @@ export function defaultSkillTopics(skillId: string, skillName: string): SkillTop
     ],
   ]);
 }
-
-export function validateSkillTopicsCoverage(skillTopicsMap: Record<string, SkillTopics>): void {
-  const missing = skills.filter((s) => !skillTopicsMap[s.id]);
-  if (missing.length > 0 && import.meta.env.DEV) {
-    console.warn('Skills missing topic data:', missing.map((s) => s.id));
-  }
-}
-
 export type { TopicSection };

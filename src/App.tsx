@@ -1,30 +1,52 @@
 import { useMemo, useState } from 'react';
-import {
-  categories,
-  getSkillById,
-  modules,
-  skills,
-  tierDescriptions,
-  tierLabels,
-} from './data/skills';
+import { useCurriculum } from './context/CurriculumContext';
 import { useProgress } from './hooks/useProgress';
-import type { FilterStatus, Skill, Tier } from './types';
+import type { FilterStatus, JDState, Skill } from './types';
 import { ModuleCard } from './components/ModuleCard';
 import { SkillCard } from './components/SkillCard';
 import { SkillModal } from './components/SkillModal';
 import { StatsBar } from './components/StatsBar';
+import { JDInputPanel } from './components/JDInputPanel';
+import { JDBanner } from './components/JDBanner';
 
 type View = 'path' | 'skills';
 
+const tierLabels: Record<number, string> = {
+  1: 'Beginner',
+  2: 'Intermediate',
+  3: 'Advanced',
+  4: 'Expert',
+};
+
+const tierDescriptions: Record<number, string> = {
+  1: '1–2 weeks with consistent effort',
+  2: '2–4 weeks with prerequisites',
+  3: '4–8 weeks; requires fundamentals',
+  4: '8+ weeks; deep specialization',
+};
+
 export default function App() {
+  const curriculum = useCurriculum();
+  const { jd, skills, modules, skillTopicsMap, setJD, removeJD, getSkillById } = curriculum;
+
+  // Progress scoped to the active JD
+  const progress = useProgress({
+    jdId: jd?.id ?? '__none__',
+    skillTopicsMap,
+    modules,
+  });
+
   const [view, setView] = useState<View>('path');
-  const [tierFilter, setTierFilter] = useState<Tier | 'all'>('all');
+  const [tierFilter, setTierFilter] = useState<number | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const [search, setSearch] = useState('');
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
 
-  const progress = useProgress();
+  const categories = useMemo(
+    () => [...new Set(skills.map((s) => s.category))].sort(),
+    [skills],
+  );
 
   const filteredSkills = useMemo(() => {
     return skills.filter((skill) => {
@@ -35,7 +57,7 @@ export default function App() {
       if (search && !skill.name.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [tierFilter, categoryFilter, statusFilter, search, progress]);
+  }, [tierFilter, categoryFilter, statusFilter, search, progress, skills]);
 
   const openSkill = (skillId: string) => {
     const skill = getSkillById(skillId);
@@ -54,15 +76,37 @@ export default function App() {
     }
   };
 
+  const handleJDGenerated = (newJD: JDState) => {
+    setJD(newJD);
+    setSelectedSkill(null);
+    setView('path');
+    // Reset filter state for new curriculum
+    setTierFilter('all');
+    setCategoryFilter('all');
+    setStatusFilter('all');
+    setSearch('');
+  };
+
+  const handleRemoveJD = () => {
+    removeJD();
+    setSelectedSkill(null);
+  };
+
+  // ── No JD active → show onboarding ──────────────────────────────────────────
+  if (!jd) {
+    return <JDInputPanel onJDGenerated={handleJDGenerated} />;
+  }
+
+  // ── JD active → main app ─────────────────────────────────────────────────────
   return (
     <div className="app">
       <header className="header">
         <div className="header__inner">
           <div className="header__brand">
-            <p className="header__eyebrow">ML Engineer Curriculum</p>
-            <h1 className="header__title">Skill Tracker</h1>
+            <p className="header__eyebrow">Skill Tracker</p>
+            <h1 className="header__title">{jd.title}</h1>
             <p className="header__subtitle">
-              Difficulty & importance matrix — track your learning path
+              Difficulty &amp; importance matrix — track your learning path
             </p>
           </div>
           <div className="header__actions">
@@ -72,6 +116,8 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      <JDBanner jd={jd} onRemove={handleRemoveJD} onReplace={handleJDGenerated} />
 
       <main className="main">
         <StatsBar
@@ -122,6 +168,7 @@ export default function App() {
                   onMarkAllSkillsRead={() => progress.markAllSkillsInModuleRead(mod.skillIds)}
                   onMarkAllSkillsUnread={() => progress.markAllSkillsInModuleUnread(mod.skillIds)}
                   onSkillClick={openSkill}
+                  getSkillById={getSkillById}
                 />
               ))}
             </div>
@@ -146,7 +193,9 @@ export default function App() {
                 <select
                   id="tier"
                   value={tierFilter}
-                  onChange={(e) => setTierFilter(e.target.value === 'all' ? 'all' : (Number(e.target.value) as Tier))}
+                  onChange={(e) =>
+                    setTierFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))
+                  }
                 >
                   <option value="all">All tiers</option>
                   {[1, 2, 3].map((t) => (
@@ -214,7 +263,9 @@ export default function App() {
                             onOpen={() => openSkill(skill.id)}
                             onToggle={(e) => stopProp(e, () => progress.toggleSkillRead(skill.id))}
                             onMarkRead={(e) => stopProp(e, () => progress.markSkillRead(skill.id))}
-                            onMarkUnread={(e) => stopProp(e, () => progress.markSkillUnread(skill.id))}
+                            onMarkUnread={(e) =>
+                              stopProp(e, () => progress.markSkillUnread(skill.id))
+                            }
                           />
                         </div>
                       );

@@ -1,14 +1,28 @@
-import { useEffect, useRef } from 'react';
-import type { Skill } from '../types';
-import { getSkillTopics } from '../data/skillTopics';
+import { useEffect, useRef } from "react";
+import type { Skill } from "../types";
+import { useCurriculum } from "../context/CurriculumContext";
 import {
   getSkillTopicProgress,
   getSubtopicIdsForSection,
   getSubtopicIdsForTopic,
   topicKey,
-} from '../data/topicHelpers';
-import { importanceLabels, tierLabels } from '../data/skills';
-import type { ProgressActions } from '../hooks/useProgress';
+} from "../data/topicHelpers";
+import type { ProgressActions } from "../hooks/useProgress";
+
+const tierLabels: Record<number, string> = {
+  1: "Beginner",
+  2: "Intermediate",
+  3: "Advanced",
+  4: "Expert",
+};
+
+const importanceLabels: Record<number, string> = {
+  5: "Critical",
+  4: "High",
+  3: "Medium",
+  2: "Low",
+  1: "Nice-to-have",
+};
 
 interface SkillModalProps {
   skill: Skill | null;
@@ -18,17 +32,18 @@ interface SkillModalProps {
 
 export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const { getSkillTopics } = useCurriculum();
 
   useEffect(() => {
     if (!skill) return;
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === "Escape") onClose();
     };
-    document.addEventListener('keydown', handleKey);
-    document.body.style.overflow = 'hidden';
+    document.addEventListener("keydown", handleKey);
+    document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener('keydown', handleKey);
-      document.body.style.overflow = '';
+      document.removeEventListener("keydown", handleKey);
+      document.body.style.overflow = "";
     };
   }, [skill, onClose]);
 
@@ -59,15 +74,29 @@ export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
             </h2>
             <div className="modal__meta">
               <span className={`importance importance--${skill.importance}`}>
-                {'★'.repeat(skill.importance)}
-                <span className="importance__label">{importanceLabels[skill.importance]}</span>
+                {"★".repeat(skill.importance)}
+                <span className="importance__label">
+                  {importanceLabels[skill.importance]}
+                </span>
               </span>
               <span className="skill-card__hours">{skill.hours}h</span>
               <span className="skill-card__category">{skill.category}</span>
             </div>
           </div>
-          <button type="button" className="modal__close" onClick={onClose} aria-label="Close">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button
+            type="button"
+            className="modal__close"
+            onClick={onClose}
+            aria-label="Close"
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" />
             </svg>
           </button>
@@ -75,7 +104,10 @@ export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
 
         <div className="modal__progress">
           <div className="progress-bar progress-bar--lg">
-            <div className="progress-bar__fill" style={{ width: `${stats.pct}%` }} />
+            <div
+              className="progress-bar__fill"
+              style={{ width: `${stats.pct}%` }}
+            />
           </div>
           <span className="modal__progress-label">
             {stats.read}/{stats.total} topics completed · {stats.pct}%
@@ -102,9 +134,12 @@ export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
         <div className="modal__body">
           {detail.sections.map((section) => {
             const sectionKeys = getSubtopicIdsForSection(detail, section.id);
-            const sectionRead = sectionKeys.filter((k) => progress.isTopicRead(k)).length;
+            const sectionRead = sectionKeys.filter((k) =>
+              progress.isTopicRead(k),
+            ).length;
             const sectionTotal = sectionKeys.length;
-            const sectionDone = sectionRead === sectionTotal && sectionTotal > 0;
+            const sectionDone =
+              sectionRead === sectionTotal && sectionTotal > 0;
 
             return (
               <section key={section.id} className="topic-section">
@@ -118,7 +153,9 @@ export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
                       <button
                         type="button"
                         className="btn btn--ghost btn--sm"
-                        onClick={() => progress.markSectionRead(detail, section.id)}
+                        onClick={() =>
+                          progress.markSectionRead(detail, section.id)
+                        }
                       >
                         Mark section read
                       </button>
@@ -126,7 +163,9 @@ export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
                       <button
                         type="button"
                         className="btn btn--ghost btn--sm"
-                        onClick={() => progress.markSectionUnread(detail, section.id)}
+                        onClick={() =>
+                          progress.markSectionUnread(detail, section.id)
+                        }
                       >
                         Mark section unread
                       </button>
@@ -135,8 +174,14 @@ export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
                 </div>
 
                 {section.topics.map((topic) => {
-                  const topicKeys = getSubtopicIdsForTopic(detail, section.id, topic.id);
-                  const topicRead = topicKeys.filter((k) => progress.isTopicRead(k)).length;
+                  const topicKeys = getSubtopicIdsForTopic(
+                    detail,
+                    section.id,
+                    topic.id,
+                  );
+                  const topicRead = topicKeys.filter((k) =>
+                    progress.isTopicRead(k),
+                  ).length;
                   const topicTotal = topicKeys.length;
                   const topicDone = topicRead === topicTotal && topicTotal > 0;
 
@@ -153,7 +198,11 @@ export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
                               type="button"
                               className="btn btn--ghost btn--sm"
                               onClick={() =>
-                                progress.markTopicGroupRead(detail, section.id, topic.id)
+                                progress.markTopicGroupRead(
+                                  detail,
+                                  section.id,
+                                  topic.id,
+                                )
                               }
                             >
                               Mark read
@@ -163,7 +212,11 @@ export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
                               type="button"
                               className="btn btn--ghost btn--sm"
                               onClick={() =>
-                                progress.markTopicGroupUnread(detail, section.id, topic.id)
+                                progress.markTopicGroupUnread(
+                                  detail,
+                                  section.id,
+                                  topic.id,
+                                )
                               }
                             >
                               Mark unread
@@ -180,20 +233,35 @@ export function SkillModal({ skill, progress, onClose }: SkillModalProps) {
                             <li key={sub.id}>
                               <button
                                 type="button"
-                                className={`subtopic-item ${isRead ? 'subtopic-item--read' : ''}`}
+                                className={`subtopic-item ${isRead ? "subtopic-item--read" : ""}`}
                                 onClick={() => progress.toggleTopic(key)}
                                 aria-pressed={isRead}
                               >
-                                <span className={`subtopic-item__check ${isRead ? 'subtopic-item__check--done' : ''}`}>
+                                <span
+                                  className={`subtopic-item__check ${isRead ? "subtopic-item__check--done" : ""}`}
+                                >
                                   {isRead && (
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                                      <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="3"
+                                    >
+                                      <path
+                                        d="M20 6L9 17l-5-5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                      />
                                     </svg>
                                   )}
                                 </span>
-                                <span className="subtopic-item__label">{sub.name}</span>
+                                <span className="subtopic-item__label">
+                                  {sub.name}
+                                </span>
                                 <span className="subtopic-item__action">
-                                  {isRead ? 'Unread' : 'Read'}
+                                  {isRead ? "Unread" : "Read"}
                                 </span>
                               </button>
                             </li>

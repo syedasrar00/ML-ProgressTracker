@@ -51,3 +51,27 @@ export interface ProgressState {
 }
 
 export type FilterStatus = 'all' | 'read' | 'unread';
+
+// ─── JD-driven types ──────────────────────────────────────────────────────────
+
+/** Shape returned by the LLM (validated before saving) */
+export interface GeneratedCurriculum {
+  title: string;
+  modules: Module[];
+  skills: Skill[];
+  skillTopics: SkillTopics[];
+}
+
+/** Persisted active JD state */
+export interface JDState {
+  /** UUID used to namespace localStorage progress key */
+  id: string;
+  /** Role/title extracted from JD */
+  title: string;
+  /** Raw JD text pasted by the user */
+  rawJD: string;
+  modules: Module[];
+  skills: Skill[];
+  skillTopics: SkillTopics[];
+  createdAt: string; // ISO date string
+}
