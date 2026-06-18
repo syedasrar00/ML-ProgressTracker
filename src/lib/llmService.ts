@@ -179,7 +179,7 @@ export async function generateCurriculumFromJD(
   jd: string,
   runtimeOptions: LLMRuntimeOptions = {},
 ): Promise<GeneratedCurriculum> {
-  const provider = (import.meta.env.VITE_LLM_PROVIDER ?? 'openai').toLowerCase();
+  const provider = runtimeOptions.provider || (import.meta.env.VITE_LLM_PROVIDER ?? 'openai').toLowerCase();
   const apiKey: string = runtimeOptions.apiKey || import.meta.env.VITE_LLM_API_KEY || '';
   const modelOverride: string = runtimeOptions.model || import.meta.env.VITE_LLM_MODEL || '';
 
@@ -198,7 +198,6 @@ export async function generateCurriculumFromJD(
 
   const model = modelOverride || providerConfig.model;
   let raw: string;
-
   switch (provider) {
     case 'anthropic':
       raw = await callAnthropic(apiKey, model, jd);
